@@ -12,14 +12,15 @@ class Classify_Net(nn.Module):
         super(Classify_Net, self).__init__()
         # self.EMBEDDING_DIM = EMBEDDING_DIM
         # self.embedding = nn.Embedding(n_dict, EMBEDDING_DIM)
-        self.fc1 = nn.Linear(2 * EMBEDDING_DIM, 20)
-        self.out = nn.Linear(20, 2)
+        self.fc1 = nn.Linear(EMBEDDING_DIM, 4)
+        self.out = nn.Linear(4, 2)
 
     def forward(self, x):
         # emb = self.embedding(x)
         # emb = emb.view(-1, 2 * self.EMBEDDING_DIM)
         x = self.fc1(x)
         x = F.relu(x)
+        
         output = self.out(x)
         return output
 
@@ -29,10 +30,10 @@ class model(object):
         self.net = Classify_Net(EMBEDDING_DIM)
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr = 0.01)
         self.loss_func = nn.CrossEntropyLoss() 
-        self.epoch = 200
+        self.epoch = 100
         self.embed = Embedding
-        self.data = data
         self.acc = self.test()
+        self.data = data
         
 
     def train(self, ): # 使用所有有标签数据训练
@@ -47,9 +48,14 @@ class model(object):
                 total_loss += float(loss)
                 loss.backward()
                 self.optimizer.step()
+            
+            # if total_loss / self.data.labeled_num < 0.001:
+            #     break
 
-            # if i % 50 == 0:
+
+            # if i % 10 == 0:
             #     print(i, "epoch  loss:", total_loss / self.data.labeled_num)
+
     
     def test(self, ): # 测试模型准确率上升
         acc_num = 0
@@ -62,7 +68,7 @@ class model(object):
             x = test_data_list[i]
             x1_embed = self.embed.id2embed(int(x[0]))
             x2_embed = self.embed.id2embed(int(x[1]))
-            x_input = np.array((x1_embed + x2_embed))
+            x_input = np.array(x1_embed - x2_embed)
             x_input = Variable(torch.from_numpy(x_input)).type(torch.FloatTensor)
             
             y = test_target_list[i]
